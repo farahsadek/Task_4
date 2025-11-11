@@ -48,15 +48,36 @@ beforeAll(async () => {
 
   window.localStorage.setItem('token', registrationPayload.token);
 
-  const seedPerkResponse = await api.post('/perks', {
-    title: 'Integration Preview Benefit',
-    description: 'Baseline record created during setup for deterministic rendering checks.',
-    category: 'travel',
-    merchant: 'Integration Merchant',
-    discountPercent: 15
-  });
-
-  const seededPerk = seedPerkResponse.data.perk;
+  // Check if the test perk already exists
+  const testPerkTitle = 'Integration Preview Benefit';
+  const testMerchant = 'Integration Merchant';
+  
+  let seededPerk;
+  
+  try {
+    // Try to find existing test perk
+    const response = await api.get('/perks/all', {
+      params: { search: testPerkTitle, merchant: testMerchant }
+    });
+    
+    if (response.data.perks && response.data.perks.length > 0) {
+      // Use existing perk
+      seededPerk = response.data.perks[0];
+    } else {
+      // Create new test perk if it doesn't exist
+      const seedPerkResponse = await api.post('/perks', {
+        title: testPerkTitle,
+        description: 'Baseline record created during setup for deterministic rendering checks.',
+        category: 'travel',
+        merchant: testMerchant,
+        discountPercent: 15
+      });
+      seededPerk = seedPerkResponse.data.perk;
+    }
+  } catch (error) {
+    console.error('Error setting up test perk:', error);
+    throw error; // Re-throw to fail the test setup
+  }
   if (seededPerk?._id) {
     createdPerkIds.add(seededPerk._id);
   }
